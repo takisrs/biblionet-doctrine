@@ -1,0 +1,58 @@
+<?php
+namespace Biblionet\Entities;
+
+use Doctrine\ORM\Mapping as ORM;
+use Doctrine\Common\Collections\ArrayCollection;
+
+/**
+ * @ORM\Entity
+ * @ORM\Table(name="book_contributor")
+ */
+class BookContributorAssociation{
+
+    /**
+     * @ORM\Id
+     * @ORM\Column(type="integer")
+     * @ORM\GeneratedValue(strategy="AUTO")
+     */
+    protected $id;
+
+    /**
+     *
+     * @ORM\ManyToOne(targetEntity="Book", inversedBy="book_contributor_associations")
+     * @ORM\JoinColumn(name="book_id", referencedColumnName="id")
+     *
+     */
+    protected $book;
+
+    /**
+     *
+     * @ORM\ManyToOne(targetEntity="Contributor", inversedBy="book_contributor_associations")
+     * @ORM\JoinColumn(name="contributor_id", referencedColumnName="id")
+     *
+     */
+    protected $contributor;
+
+    /**
+     *
+     * @ORM\ManyToOne(targetEntity="ContributorType", inversedBy="book_contributor_associations")
+     * @ORM\JoinColumn(name="type_id", referencedColumnName="id")
+     *
+     */
+    protected $contributor_type;
+
+    /**
+     * @ORM\Column(type="string")
+     */
+    protected $name;
+
+    /**
+     * @ORM\OneToMany(targetEntity="Book", mappedBy="category")
+     */
+    protected $books;
+
+    public function __construct() {
+        $this->books = new ArrayCollection();
+    }
+
+}
