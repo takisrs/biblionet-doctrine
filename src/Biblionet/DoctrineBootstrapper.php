@@ -5,9 +5,9 @@ use Doctrine\ORM\Tools\Setup;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Configuration;
 
-class Doctrine {
+class DoctrineBootstrapper {
 
-    public $entityManager;
+    private $entityManager;
 
     function __construct()
     {
@@ -44,6 +44,12 @@ class Doctrine {
         );
 
         $this->entityManager = EntityManager::create($dbParams, $config);
+
+        return $this->entityManager;
+    }
+
+    public function getEntityManager(){
+        return $this->entityManager;
     }
 
 }
