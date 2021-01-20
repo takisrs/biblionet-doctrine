@@ -3,6 +3,7 @@ namespace Biblionet;
 
 use Doctrine\ORM\Tools\Setup;
 use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\Configuration;
 
 class Doctrine {
 
@@ -10,12 +11,27 @@ class Doctrine {
 
     function __construct()
     {
-        // Create a simple "default" Doctrine ORM configuration for Annotations
+        $applicationMode = "development";
+        
         $paths = array(APP_DIR."/src/Biblionet/Entities");
-        $isDevMode = true;
-        $proxyDir = null;
-        $cache = null;
+
         $useSimpleAnnotationReader = false;
+
+        $cache = new \Doctrine\Common\Cache\ArrayCache;
+
+        $config = new Configuration;
+        $config->setMetadataCacheImpl($cache);
+        $driverImpl = $config->newDefaultAnnotationDriver($paths, $useSimpleAnnotationReader);
+        $config->setMetadataDriverImpl($driverImpl);
+        $config->setQueryCacheImpl($cache);
+        $config->setProxyDir(APP_DIR."/src/Biblionet/Proxies");
+        $config->setProxyNamespace("Biblionet\Proxies\\");
+        
+        if ($applicationMode == "development") {
+            $config->setAutoGenerateProxyClasses(true);
+        } else {
+            $config->setAutoGenerateProxyClasses(false);
+        }
 
         // database configuration parameters
         $dbParams = array(
@@ -27,7 +43,6 @@ class Doctrine {
             'charset' => 'UTF8'
         );
 
-        $config = Setup::createAnnotationMetadataConfiguration($paths, $isDevMode, $proxyDir, $cache, $useSimpleAnnotationReader);
         $this->entityManager = EntityManager::create($dbParams, $config);
     }
 
