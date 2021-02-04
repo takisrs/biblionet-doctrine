@@ -3,16 +3,18 @@ require_once "vendor/autoload.php";
 
 define("APP_DIR", __DIR__);
 
-use Biblionet\ApiFetcher;
+#use Biblionet\ApiFetcher;
+
+use takisrs\Biblionet\ApiFetcher;
 use Biblionet\DbSaver;
 
 
 $fetcher = new ApiFetcher("testuser", "testpsw");
-$fetcher->fetchById(['251710', '252220'])->fill(["contributors", "subjects"])->fill("companies");
+$fetcher->fetch(ApiFetcher::FETCH_BY_ID, ['251710', '252220']);
 
 //$fetcher->fetchByRange("2020-08-01");
 
-$dbSaver = new Dbsaver($fetcher->getFetchedItems());
+$dbSaver = new Dbsaver($fetcher->getItems());
 $dbSaver->store();
 
 /*
