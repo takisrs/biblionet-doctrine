@@ -10,7 +10,8 @@
     ],
     "require": {
         "guzzlehttp/guzzle": "^7.0",
-        "doctrine/orm": "^2.8.1"
+        "doctrine/orm": "^2.8.1",
+        "takisrs/biblionet-api-wrapper": "^1.0"
     },
     "autoload": {
         "psr-0": {"": "src/"}

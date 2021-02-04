@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "eff99dc7781bb6f1a402e8651e997709",
+    "content-hash": "f9127233cbfbcd4ea234dbfa2ea8b667",
     "packages": [
         {
             "name": "composer/package-versions-deprecated",
@@ -2215,6 +2215,58 @@
                 }
             ],
             "time": "2020-12-05T07:33:16+00:00"
+        },
+        {
+            "name": "takisrs/biblionet-api-wrapper",
+            "version": "1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/takisrs/biblionet-api-wrapper.git",
+                "reference": "810f6a7e6b01eb3c769f466ab2e767249ba44e0a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/takisrs/biblionet-api-wrapper/zipball/810f6a7e6b01eb3c769f466ab2e767249ba44e0a",
+                "reference": "810f6a7e6b01eb3c769f466ab2e767249ba44e0a",
+                "shasum": ""
+            },
+            "require": {
+                "guzzlehttp/guzzle": "^7.0"
+            },
+            "require-dev": {
+                "victorjonsson/markdowndocs": "^1.3"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "takisrs\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Panos Pantazopoulos",
+                    "email": "takispadaz@gmail.com",
+                    "homepage": "https://github.com/takisrs",
+                    "role": "Full Stack Developer"
+                }
+            ],
+            "description": "A wrapper library for biblionet's api",
+            "homepage": "https://github.com/takisrs/biblionet-api-wrapper",
+            "keywords": [
+                "Api Wrapper",
+                "biblionet",
+                "books"
+            ],
+            "support": {
+                "email": "takispadaz@gmail.com",
+                "issues": "https://github.com/takisrs/biblionet-api-wrapper/issues",
+                "source": "https://github.com/takisrs/biblionet-api-wrapper/tree/1.0.0"
+            },
+            "time": "2021-02-03T22:55:30+00:00"
         }
     ],
     "packages-dev": [],
