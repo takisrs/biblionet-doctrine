@@ -17,7 +17,7 @@ class ApiFetcher
 
     private $fetchedItems = [];
 
-    function __construct($username, $password)
+    function __construct($username, $password, $log = [Logger::SUCCESS, Logger::ERROR, Logger::INFO, Logger::WARNING], $timeout = 10)
     {
 
         $this->apiUsername = $username;
@@ -25,10 +25,10 @@ class ApiFetcher
 
         $this->client = new Client([
             'base_uri' => 'https://biblionet.gr/wp-json/biblionetwebservice/',
-            'timeout'  => 10.0
+            'timeout'  => $timeout
         ]);
 
-        $this->logger = new Logger(true);
+        $this->logger = new Logger($log);
     }
 
     public function getFetchedItems()
@@ -36,17 +36,23 @@ class ApiFetcher
         return $this->fetchedItems;
     }
 
-    public function fetch($year, $month)
+    public function fetch($date)
     {
-        $page = 1;
+        $page = 0;
         $results_per_page = 50;
 
+        $date = $date ?: date("Y-m");
+
+        $date = new \DateTime($date);
+        $year = $date->format('Y');
+        $month = $date->format('m');
+
         while (true) {
+            $page++;
             $fetchedBooks = $this->_fetchBooksByMonth($year, $month, $results_per_page, $page);
 
             if ($fetchedBooks && is_array($fetchedBooks)) {
                 $this->fetchedItems = array_merge($this->fetchedItems, $fetchedBooks);
-                $page++;
                 continue;
             } else {
                 break;
@@ -85,16 +91,31 @@ class ApiFetcher
         $period = new \DatePeriod($start, $interval, $end);
 
         foreach ($period as $dt) {
-            $this->fetch($dt->format("Y"), $dt->format("m"));
+            $this->fetch($dt->format("Y-m"));
         }
+
+        return $this;
+    }
+
+    public function filter($field, $value, $operator = "=="){
+        $totalCount = count($this->fetchedItems);
+        $filteredCount = $totalCount;
+        if ($totalCount > 0){      
+            if (property_exists($this->fetchedItems[0], $field)){
+                $this->fetchedItems = array_filter($this->fetchedItems, function($item) use($field, $value, $operator){
+                    return Helper::compare($item->$field, $value, $operator);
+                });
+                $filteredCount = count($this->fetchedItems);
+                $this->logger->log(Logger::INFO, 'filter', 'filter by '.$field.$operator.$value, 'filtered:'.$filteredCount.'/'.$totalCount);
+            }
+        }
+
 
         return $this;
     }
 
     private function _fetchAssociations($options, $id)
     {
-
-        $this->logger->log('info', self::class, "start fetching " . $options['name'] . " for item " . $id);
 
         try {
             $response = $this->client->request('POST', $options['apiMethod'], [
@@ -111,9 +132,9 @@ class ApiFetcher
 
             return Helper::isJson($result) ? json_decode($result)[0] : NULL;
         } catch (ClientException $e) {
-            $this->logger->log('error', self::class, $e->getMessage());
+            $this->logger->log(Logger::ERROR, 'api', 'ClientException', $e->getMessage());
         } catch (ConnectException $e) {
-            $this->logger->log('error', self::class, $e->getMessage());
+            $this->logger->log(Logger::ERROR, 'api', 'ConnectException', $e->getMessage());
         }
     }
 
@@ -121,12 +142,12 @@ class ApiFetcher
     public function fill($types)
     {
 
+        if (!is_array($types)) $types = [$types];
+
         if (count($this->fetchedItems) == 0) {
-            $this->logger->log('error', self::class, "No fetched items to fill");
+            $this->logger->log(Logger::WARNING, 'api', 'fill', 'no items');
             return $this;
         }
-
-        if (!is_array($types)) $types = [$types];
 
         $availableTypes = [
             'contributors' => [
@@ -145,12 +166,16 @@ class ApiFetcher
 
         foreach ($types as $type) {
             if (!in_array($type, array_keys($availableTypes))) {
-                $this->logger->log('error', self::class, "Wrong fill type input: ", $type);
+                $this->logger->log(Logger::ERROR, 'api', 'fill', 'wrong input => '.$type);
                 continue;
             }
 
             try {
+                $total = count($this->fetchedItems);
+                $counter = 0;
                 foreach ($this->fetchedItems as $key => $item) {
+                    $counter++;
+                    $this->logger->log(Logger::INFO, 'api', "fetch ".$type." ".$counter."/".$total, $item->TitlesID, Helper::getPercentage($counter, $total));
                     $extraFields = $this->_fetchAssociations($availableTypes[$type], $item->TitlesID);
 
                     if ($extraFields && is_array($extraFields)) {
@@ -167,9 +192,9 @@ class ApiFetcher
                     }
                 }
             } catch (ClientException $e) {
-                $this->logger->log('error', self::class, $e->getMessage());
+                $this->logger->log(Logger::ERROR, 'api', 'ClientException', $e->getMessage());
             } catch (ConnectException $e) {
-                $this->logger->log('error', self::class, $e->getMessage());
+                $this->logger->log(Logger::ERROR, 'api', 'ConnectException', $e->getMessage());
             }
         }
 
@@ -179,7 +204,7 @@ class ApiFetcher
 
     private function _fetchBookById($id)
     {
-        $this->logger->log('info', self::class, "fetching book: " . $id);
+        $this->logger->log(Logger::INFO, 'api', "fetch", "book:".$id);
 
         try {
             $response = $this->client->request('POST', 'get_title', [
@@ -196,9 +221,9 @@ class ApiFetcher
 
             return Helper::isJson($result) ? json_decode($result)[0] : NULL;
         } catch (ClientException $e) {
-            $this->logger->log('error', self::class, $e->getMessage());
+            $this->logger->log(Logger::ERROR, 'api', 'ClientException', $e->getMessage());
         } catch (ConnectException $e) {
-            $this->logger->log('error', self::class, $e->getMessage());
+            $this->logger->log(Logger::ERROR, 'api', 'ConnectException', $e->getMessage());
         }
     }
 
@@ -206,7 +231,7 @@ class ApiFetcher
     private function _fetchBooksByMonth($year, $month, $titles_per_page, $page)
     {
         try {
-            $this->logger->log('info', self::class, $year . " - " . $month, "from " . $titles_per_page * ($page - 1) . " to " . $titles_per_page * $page . "");
+            $this->logger->log(Logger::INFO, 'api', 'fetch', $month . '/' . $year . ' : ' . $titles_per_page * ($page - 1) . '=>' . $titles_per_page * $page);
 
             $response = $this->client->request('POST', 'get_month_titles', [
                 'form_params' => [
@@ -219,23 +244,16 @@ class ApiFetcher
                 ]
             ]);
 
-            //$code = $response->getStatusCode(); // 200
-            //$reason = $response->getReasonPhrase(); // OK
-
-            // Get all of the response headers.
-            /*foreach ($response->getHeaders() as $name => $values) {
-                echo $name . ': ' . implode(', ', $values) . "\r\n";
-            }*/
-
             $body = $response->getBody();
 
             $result = $body->getContents();
 
             return Helper::isJson($result) ? json_decode($result)[0] : NULL;
         } catch (ClientException $e) {
-            echo $e->getMessage();
+            $this->logger->log(Logger::ERROR, 'api', 'ClientException', $e->getMessage());
         } catch (ConnectException $e) {
-            echo $e->getMessage();
+            $this->logger->log(Logger::ERROR, 'api', 'ConnectException', $e->getMessage());
         }
     }
+}
 }
